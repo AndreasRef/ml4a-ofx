@@ -6,7 +6,7 @@ void ofApp::setup() {
     ofSetWindowTitle("ConvnetOSC");
     cam.initGrabber(320, 240);
     
-    ccv.setup("../../../../models/image-net-2012.sqlite3");
+    ccv.setup("image-net-2012.sqlite3");
     if (!ccv.isLoaded()) return;
     
     // default settings
@@ -16,14 +16,22 @@ void ofApp::setup() {
     
     // load settings from file
     ofXml xml;
-    xml.load("settings.xml");
+    xml.load("settings_convnet.xml");
     xml.setTo("ConvnetOSC");
     oscDestination = xml.getValue("ip");
     oscPort = ofToInt(xml.getValue("port"));
     oscAddressRoot = xml.getValue("address");
-
+    bool sendClassificationsByDefault = (xml.getValue("sendClassificationsByDefault") == "1");
+    
+    // setup osc
     osc.setup(oscDestination, oscPort);
     sending = false;
+    
+    // setup gui
+    gui.setup();
+    gui.setName("ConvnetOSC");
+    gui.add(sending.set("sending", false));
+    gui.add(sendClassifications.setup("send classifications", sendClassificationsByDefault));
 }
 
 void ofApp::update() {
@@ -31,7 +39,8 @@ void ofApp::update() {
 }
 
 void ofApp::sendOsc() {
-    featureEncoding = ccv.encode(cam, ccv.numLayers()-1);
+    int layer = sendClassifications ? ccv.numLayers() : ccv.numLayers()-1;
+    featureEncoding = ccv.encode(cam, layer);
     
     msg.clear();
     msg.setAddress(oscAddressRoot);
@@ -39,7 +48,6 @@ void ofApp::sendOsc() {
         msg.addFloatArg(featureEncoding[i]);
     }
     osc.sendMessage(msg);
-    
 }
 
 void ofApp::keyPressed(int key) {
@@ -53,32 +61,33 @@ void ofApp::draw() {
         ofDrawBitmapString("Network file not found!\nCheck your data folder to make sure it exists.", 20, 20);
         return;
     }
-
+    
     if (sending) {
         ofBackground(0, 255, 0);
         
         ofSetColor(0, 100);
         ofDrawRectangle(10, 280, 520, 66);
         ofSetColor(255);
-        string txt = "sending "+ofToString(msg.getNumArgs())+" values.\n";
+        string txt = "sending "+ofToString(sendClassifications ? "classification probabilities":"fc2 layer activations")+" ("+ofToString(msg.getNumArgs())+" values)\n";
         txt += "to "+oscDestination+", port "+ofToString(oscPort)+",\n";
         txt += "osc address \""+oscAddressRoot+"\"\n";
-        txt += "press spacebar to turn off sending.";
+        txt += "press spacebar or click 'sending' to turn off sending.";
         ofDrawBitmapString(txt, 20, 296);
-
+        
         sendOsc();
     }
     else {
         ofBackground(255, 0, 0);
-
+        
         ofSetColor(0, 100);
         ofDrawRectangle(10, 280, 520, 66);
         ofSetColor(255);
-        string txt = "press spacebar to turn on sending.";
+        string txt = "press spacebar or click 'sending' to turn on sending.";
         ofDrawBitmapString(txt, 20, 296);
     }
     
     ofSetColor(255);
-    cam.draw(110, 10);
+    cam.draw(210, 10);
+    gui.draw();
 
 }

@@ -1,2 +1,3 @@
 ofxCcv
+ofxGui
 ofxOsc

@@ -51,14 +51,14 @@ void ofApp::setup(){
     drawNumbers = false;
     drawFace = true;
     drawPose = false;
-    drawVideo = false;
+    drawVideo = true;
     
     // Setup grabber
     grabber.setup(1280,720);
     //grabber.setup(960,540);
     
     // Setup tracker
-    tracker.setup("../../../../models/shape_predictor_68_face_landmarks.dat");
+    tracker.setup("../../../../data/shape_predictor_68_face_landmarks.dat");
 
 }
 
